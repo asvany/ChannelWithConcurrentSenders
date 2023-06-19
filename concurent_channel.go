@@ -11,9 +11,9 @@ import (
 type ChannelWithConcurrentSenders[T any] interface {
 	DetachSender() error
 	ROChannel() <-chan T
+	ROChannel_err() (<-chan T, error)
 	AttachSender_err() (ChannelWithConcurrentSenders[T], error)
 	AttachSender() ChannelWithConcurrentSenders[T]
-	// AllocateChannel() chan interface{}
 	Send(T)
 	Wait()
 }
@@ -60,18 +60,8 @@ func (c *concurrentChannel[T]) AttachSender() ChannelWithConcurrentSenders[T] {
 		fmt.Println("ERROR:channel already closed")
 		return nil
 	}
-	
-}
 
-// // AllocateChannel .. Allocate a sender and get the cannel
-// func (c *concurrentChannel) AllocateChannel() chan interface{} {
-// 	if !c.closed {
-// 		c.wg.Add(1)
-// 	} else {
-// 		panic("channel already closed")
-// 	}
-// 	return c.channel
-// }
+}
 
 // Wait ... wait until the all sender release the channel
 func (c *concurrentChannel[T]) Wait() {
@@ -90,6 +80,15 @@ func (c *concurrentChannel[T]) ROChannel() <-chan T {
 		return nil
 	}
 	return c.channel
+}
+
+// ROChannel .. get receiver channel
+func (c *concurrentChannel[T]) ROChannel_err() (<-chan T, error) {
+	if c.closed {
+		return nil, fmt.Errorf("ERROR:channel already closed")
+
+	}
+	return c.channel, nil
 }
 
 // DetachSender ...  Stop and close the channel

@@ -9,7 +9,6 @@ const noSender = 10
 const noReceiver = 10
 const noMessage = 20
 
-// this function gets an ConcurrentChannel and sends 10-100 messages randomly to it
 func randomIntSender(cc ChannelWithConcurrentSenders[int]) {
 	defer cc.DetachSender()
 	for i := 0; i < noMessage; i++ {
