@@ -1,6 +1,7 @@
 package asutils
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -8,10 +9,10 @@ import (
 
 // ChannelWithConcurrentSenders ... generic channel with concurrent producers
 type ChannelWithConcurrentSenders interface {
-	Close()
-	ROChannel() ChannelWithConcurrentSendersReceiver
-	Forward() ChannelWithConcurrentSenders
-	AllocateChannel() chan interface{}
+	DetachSender() error
+	ROChannel() (ChannelWithConcurrentSendersReceiver, error)
+	AttachSender() (ChannelWithConcurrentSenders, error)
+	// AllocateChannel() chan interface{}
 	Send(interface{})
 	Wait()
 }
@@ -29,21 +30,35 @@ type concurrentChannel struct {
 
 // NewChannelWithConcurrentSenders ... create a ChannelWithConcurrentSenders
 func NewChannelWithConcurrentSenders(length int) ChannelWithConcurrentSenders {
+	var ret ChannelWithConcurrentSenders
 	if length != 0 {
-		return &concurrentChannel{channel: make(chan interface{}, length), closed: false}
+		ret = &concurrentChannel{channel: make(chan interface{}, length), closed: false}
+	} else {
+		ret = &concurrentChannel{channel: make(chan interface{}), closed: false}
 	}
-	return &concurrentChannel{channel: make(chan interface{}), closed: false}
+	return ret
+
 }
 
-// Forward increase reference counter and returns the interface itself , ideal for forward to an another goroutine
-func (c *concurrentChannel) Forward() ChannelWithConcurrentSenders {
+// AttachSender increase reference counter and returns the interface itself , ideal for forward to an another goroutine
+func (c *concurrentChannel) AttachSender() (ChannelWithConcurrentSenders, error) {
 	if !c.closed {
 		c.wg.Add(1)
 	} else {
-		panic("channel already closed")
+		return nil, fmt.Errorf("channel already closed")
 	}
-	return c
+	return c, nil
 }
+
+// // AllocateChannel .. Allocate a sender and get the cannel
+// func (c *concurrentChannel) AllocateChannel() chan interface{} {
+// 	if !c.closed {
+// 		c.wg.Add(1)
+// 	} else {
+// 		panic("channel already closed")
+// 	}
+// 	return c.channel
+// }
 
 // Wait ... wait until the all sender release the channel
 func (c *concurrentChannel) Wait() {
@@ -55,26 +70,19 @@ func (c *concurrentChannel) Send(elem interface{}) {
 	c.channel <- elem
 }
 
-// AllocateChannel .. Allocate a sender and get the cannel
-func (c *concurrentChannel) AllocateChannel() chan interface{} {
-	if !c.closed {
-		c.wg.Add(1)
-	} else {
-		panic("channel already closed")
-	}
-	return c.channel
-}
-
 // ROChannel .. get receiver channel
-func (c *concurrentChannel) ROChannel() ChannelWithConcurrentSendersReceiver {
+func (c *concurrentChannel) ROChannel() (ChannelWithConcurrentSendersReceiver, error) {
 	if c.closed {
-		panic("channel already closed")
+		return nil, fmt.Errorf("channel already closed")
 	}
-	return c.channel
+	return c.channel, nil
 }
 
-// Close ...  Stop and close the channel
-func (c *concurrentChannel) Close() {
+// DetachSender ...  Stop and close the channel
+func (c *concurrentChannel) DetachSender() error {
+	if c.closed {
+		return fmt.Errorf("channel already closed")
+	}
 	c.wg.Done()
 	go func() {
 		c.wg.Wait()
@@ -83,4 +91,5 @@ func (c *concurrentChannel) Close() {
 			c.closed = true
 		})
 	}()
+	return nil
 }
