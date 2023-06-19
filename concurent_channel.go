@@ -1,4 +1,4 @@
-package asutils
+package ChannelWithConcurrentSenders
 
 import (
 	"fmt"
