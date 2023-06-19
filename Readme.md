@@ -14,7 +14,7 @@ This repository contains a Go implementation of a concurrent channel, `ChannelWi
 First, create a new concurrent channel with the desired length:
 
 ```go
-cc := asutils.NewChannelWithConcurrentSenders[int](10)
+cc := NewChannelWithConcurrentSenders[int](10)
 ```
 To send data on the channel, first attach a sender, then use the `Send` method:
 
