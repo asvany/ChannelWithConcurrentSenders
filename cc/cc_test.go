@@ -1,4 +1,4 @@
-package ChannelWithConcurrentSenders
+package cc
 
 import (
 	"math/rand"
@@ -17,16 +17,16 @@ func randomIntSender(cc ChannelWithConcurrentSenders[int]) {
 }
 
 func TestConcurrentChannel_Int_SingleReceiver(t *testing.T) {
-	cc := NewChannelWithConcurrentSenders[int](10)
+	_cc := NewChannelWithConcurrentSenders[int](10)
 	for i := 0; i < noSender; i++ {
-		go randomIntSender(cc.AttachSender())
+		go randomIntSender(_cc.AttachSender())
 	}
 	counter := 0
-	for i := range cc.ROChannel() {
+	for i := range _cc.ROChannel() {
 		counter++
 		t.Log(i)
 	}
-	cc.Wait()
+	_cc.Wait()
 	if counter != noSender*noMessage {
 		t.Errorf("bad result: got %v, want %v", counter, noSender*noMessage)
 	}
@@ -34,20 +34,20 @@ func TestConcurrentChannel_Int_SingleReceiver(t *testing.T) {
 }
 
 func TestConcurrentChanel_Int_MultipleReceivers(t *testing.T) {
-	cc := NewChannelWithConcurrentSenders[int](10)
+	_cc := NewChannelWithConcurrentSenders[int](10)
 	for i := 0; i < noSender; i++ {
-		go randomIntSender(cc.AttachSender())
+		go randomIntSender(_cc.AttachSender())
 	}
 	counter := 0
 	for i := 0; i < noReceiver; i++ {
 		go func() {
-			for i := range cc.ROChannel() {
+			for i := range _cc.ROChannel() {
 				counter++
 				t.Log(i, counter)
 			}
 		}()
 	}
-	cc.Wait()
+	_cc.Wait()
 
 	if counter != noSender*noMessage {
 		t.Errorf("bad result: got %v, want %v", counter, noSender*noMessage)

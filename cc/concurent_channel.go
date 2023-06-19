@@ -1,4 +1,4 @@
-package ChannelWithConcurrentSenders
+package cc
 
 import (
 	"fmt"
